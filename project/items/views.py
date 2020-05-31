@@ -28,27 +28,42 @@ def index():
             request.json['description'],
             request.json['quantity']
         )
-
+        print('new_item: ', new_item)
         db.session.add(new_item)
         db.session.commit()
+        return jsonify({
+            'id': new_item.id,
+            'name': new_item.name,
+            'description': new_item.description,
+            'quantity': new_item.quantity
+        })
     return jsonify(item_list)
 
 
 @items_blueprint.route('/<int:item_id>', methods=['GET', 'PATCH', 'DELETE'])
 def item(item_id):
     found_item = Item.query.get(item_id)
-    print(found_item)
     if request.method == 'DELETE':
+        print(found_item)
         db.session.delete(found_item)
         db.session.commit()
-        return {'message': 'Item successfully deleted'}
+        # Delete still needs to return something or you get an error
+        return jsonify({
+            'id': found_item.id,
+            'name': found_item.name,
+            'description': found_item.description,
+            'quantity': found_item.quantity
+        })
     if request.method == 'PATCH':
-        print('JSON: ', request.json)
-        print('found_item: ', found_item)
         found_item.name = request.json['name']
         found_item.description = request.json['description']
         found_item.quantity = request.json['quantity']
         db.session.add(found_item)
         db.session.commit()
-        return {'message': 'Changes successfully saved'}
+        return jsonify({
+            'id': found_item.id,
+            'name': found_item.name,
+            'description': found_item.description,
+            'quantity': found_item.quantity
+        })
     return found_item
