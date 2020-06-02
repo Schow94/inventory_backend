@@ -1,69 +1,65 @@
 from flask import request, flash, Blueprint, jsonify
+from flask_restful import Api, Resource, fields, marshal_with
 from project.models import Item
 from project import db
 
 
-items_blueprint = Blueprint(
+items_blueprint_bp = Blueprint(
     'items',
     __name__
 )
 
+items_blueprint = Api(items_blueprint_bp)
 
-@items_blueprint.route('/', methods=['GET', 'POST'])
-def index():
-    all_items = Item.query.all()
-    # Can do this, but flask-restful will probably make it easier
-    item_list = [{
-        'id': item.id,
-        'name': item.name,
-        'description': item.description,
-        'quantity': item.quantity
-        }
-        for item in all_items
-        ]
+# Items field for Flask Restful
+item_fields = {
+            'id': fields.Integer,
+            'name': fields.String,
+            'description': fields.String,
+            'quantity': fields.Integer
+}
 
-    if request.method == 'POST':
+
+@items_blueprint.resource('/', methods=['GET', 'POST'])
+class ItemsAPI(Resource):
+    @marshal_with(item_fields)
+    def get(self):
+        return Item.query.all()
+
+    @marshal_with(item_fields)
+    def post(self):
         new_item = Item(
             request.json['name'],
             request.json['description'],
             request.json['quantity']
         )
-        print('new_item: ', new_item)
         db.session.add(new_item)
         db.session.commit()
-        return jsonify({
-            'id': new_item.id,
-            'name': new_item.name,
-            'description': new_item.description,
-            'quantity': new_item.quantity
-        })
-    return jsonify(item_list)
+        return new_item
 
 
-@items_blueprint.route('/<int:item_id>', methods=['GET', 'PATCH', 'DELETE'])
-def item(item_id):
-    found_item = Item.query.get(item_id)
-    if request.method == 'DELETE':
-        print(found_item)
+@items_blueprint.resource('/<int:item_id>', methods=['GET', 'PATCH', 'DELETE'])
+class ItemAPI(Resource):
+    @marshal_with(item_fields)
+    # Looks like you can just pas in parameters to route fxns
+    def delete(self, item_id):
+        # print('request: ', request)
+        found_item = Item.query.get(item_id)
         db.session.delete(found_item)
         db.session.commit()
         # Delete still needs to return something or you get an error
-        return jsonify({
-            'id': found_item.id,
-            'name': found_item.name,
-            'description': found_item.description,
-            'quantity': found_item.quantity
-        })
-    if request.method == 'PATCH':
+        return found_item
+
+    @marshal_with(item_fields)
+    def patch(self, item_id):
+        found_item = Item.query.get(item_id)
         found_item.name = request.json['name']
         found_item.description = request.json['description']
         found_item.quantity = request.json['quantity']
         db.session.add(found_item)
         db.session.commit()
-        return jsonify({
-            'id': found_item.id,
-            'name': found_item.name,
-            'description': found_item.description,
-            'quantity': found_item.quantity
-        })
-    return found_item
+        return found_item
+    
+    def get(self, item_id):
+        found_item = Item.query.get(item_id)
+        return found_item

@@ -19,11 +19,11 @@ else:
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
-from project.items.views import items_blueprint
+from project.items.views import items_blueprint_bp
 
 Migrate(app, db)
 
-app.register_blueprint(items_blueprint, url_prefix='/items')
+app.register_blueprint(items_blueprint_bp, url_prefix='/items')
 
 
 @app.route('/')
